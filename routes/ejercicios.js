@@ -4,7 +4,13 @@ const dotenv = require("dotenv");
 const fs = require("fs");
 const path = require("path");
 const cloudinary = require("cloudinary").v2;
-const pLimit = require("p-limit").default;
+import("p-limit").then(pLimit => {
+  // Usar pLimit dentro del bloque then
+  const limit = pLimit.default; // Si es necesario acceder a `default`
+  // El resto de tu lógica aquí
+}).catch(err => {
+  console.error("Error cargando p-limit:", err);
+});
 const Ejercicio = require("../models/Ejercicios.js");
 
 dotenv.config();
