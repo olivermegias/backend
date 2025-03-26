@@ -4,13 +4,7 @@ const dotenv = require("dotenv");
 const fs = require("fs");
 const path = require("path");
 const cloudinary = require("cloudinary").v2;
-import("p-limit").then(pLimit => {
-  // Usar pLimit dentro del bloque then
-  const limit = pLimit.default; // Si es necesario acceder a `default`
-  // El resto de tu lógica aquí
-}).catch(err => {
-  console.error("Error cargando p-limit:", err);
-});
+const pLimit = require("p-limit").default;
 const Ejercicio = require("../models/Ejercicios.js");
 
 dotenv.config();
@@ -154,6 +148,7 @@ router.get("/importar", async (req, res) => {
   }
 });
 
+// Obtener todos los ejercicios
 router.get("/", async (req, res) => {
   try {
     const ejercicios = await Ejercicio.find();
@@ -163,5 +158,75 @@ router.get("/", async (req, res) => {
   }
 });
 
+// Nueva ruta: Obtener un ejercicio por ID
+// Ruta para obtener ejercicios por IDs (para DetalleRutina)
+router.get("/porIds", async (req, res) => {
+  try {
+    const ids = req.query.ids ? req.query.ids.split(",") : [];
+
+    if (ids.length === 0) {
+      return res.status(400).json({ error: "Se requiere al menos un ID de ejercicio." });
+    }
+
+    console.log("📌 Buscando ejercicios con IDs:", ids);
+
+    const ejercicios = await Ejercicio.find({ id: { $in: ids } });
+
+    res.json(ejercicios);
+  } catch (error) {
+    console.error("❌ Error al obtener ejercicios por IDs:", error);
+    res.status(500).json({ error: "Error al obtener ejercicios." });
+  }
+});
+
+// Ruta para obtener un ejercicio por ID
+router.get("/:id", async (req, res) => {
+  try {
+    const ejercicio = await Ejercicio.findOne({ id: req.params.id });
+    
+    if (!ejercicio) {
+      return res.status(404).json({ error: "Ejercicio no encontrado." });
+    }
+    
+    res.json(ejercicio);
+  } catch (error) {
+    console.error("Error al obtener ejercicio por ID:", error);
+    res.status(500).json({ error: "Error al obtener ejercicio." });
+  }
+});
+
+
+
+// Nueva ruta: Obtener ejercicios filtrados por categoría
+router.get("/categoria/:categoria", async (req, res) => {
+  try {
+    const ejercicios = await Ejercicio.find({ 
+      categoria: { $regex: req.params.categoria, $options: 'i' } 
+    });
+    
+    res.json(ejercicios);
+  } catch (error) {
+    console.error("Error al obtener ejercicios por categoría:", error);
+    res.status(500).json({ error: "Error al obtener ejercicios." });
+  }
+});
+
+// Nueva ruta: Obtener ejercicios filtrados por músculo
+router.get("/musculo/:musculo", async (req, res) => {
+  try {
+    const musculo = req.params.musculo;
+    const ejercicios = await Ejercicio.find({
+      $or: [
+        { musculosPrimarios: { $regex: musculo, $options: 'i' } },
+        { musculosSecundarios: { $regex: musculo, $options: 'i' } }
+      ]
+    });
+    
+    res.json(ejercicios);
+  } catch (error) {
+    console.error("Error al obtener ejercicios por músculo:", error);
+    res.status(500).json({ error: "Error al obtener ejercicios por músculo." });
+  }
+});
 
 module.exports = router;
